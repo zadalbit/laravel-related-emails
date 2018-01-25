@@ -15,6 +15,15 @@ class RelatedEmails extends Model
 	protected $fillable = ['email','user_id','token','as_login','attempts','updated_utc'];
 	
 	/**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = [
+        'token', 'user_id',
+    ];
+	
+	/**
     * Get the user that owns the email.
     */
 	public function user()

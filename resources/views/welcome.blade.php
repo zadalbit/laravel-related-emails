@@ -78,7 +78,7 @@
             @endif
 
             <div class="content">
-                <img src="/storage/logo_s2.png">
+                <img src="/storage/logo_s2.jpg">
 				<br><br>
                 <div class="links">
                     <a href="https://laravel.com/docs">Documentation</a>

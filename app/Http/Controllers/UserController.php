@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\RelatedEmails;
+use App\Models\User;
 use Auth;
 
 class UserController extends Controller
@@ -22,7 +22,7 @@ class UserController extends Controller
 	
 	public function verify_email($token)
 	{
-		$verifyEmail = RelatedEmails::where('token', $token)->first();
+		$verifyEmail = User::find(Auth::id())->related_emails()->where('token', $token)->first();
 		
         if(isset($verifyEmail) ) {
             if(!$verifyEmail->activated) 
@@ -30,10 +30,10 @@ class UserController extends Controller
 				$verifyEmail->activated = 1;
 				$verifyEmail->save();
 				
-                $status = "Your e-mail is verified.";
+                $status = "Your e-mail ". $verifyEmail->email ." is verified.";
             }
 			else {
-                $status = "Your e-mail is already verified.";
+                $status = "Your e-mail ". $verifyEmail->email ." is already verified.";
             }
         }
 		else {

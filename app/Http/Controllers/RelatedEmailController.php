@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\RelatedEmails;
+use App\Models\User;
 use App\Mail\VerifyMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
@@ -22,10 +23,7 @@ class RelatedEmailController extends Controller
      */
     public function index()
     {
-        $user_id = Auth::id();
-        $info = RelatedEmails::select('id', 'email', 'as_login', 'activated', 'attempts', 'updated_utc')->where('user_id', $user_id)->get();
-		
-		return $info;
+		return User::find(Auth::id())->related_emails;
     }
 
     /**
@@ -92,49 +90,45 @@ class RelatedEmailController extends Controller
     {	
 		$attempts_max = 3;
 		$time_sec_max = 180;
+		$email = base64_decode($request->email);
+		$time = time();
 		
-		$info = RelatedEmails::where('id', $id)->first();
-		
-		if($info != null)		
-		{
-			$email = base64_decode($request->email);
-			$time = time();
+		$info = RelatedEmails::findOrFail($id);
 			
-			if(!empty($info->email))
+		if(!empty($info->email))
+		{
+			if($info->email == $email)
 			{
-				if($info->email == $email)
-				{
-					$updated = $info->updated_utc;
-					$diff = $time - $updated;
+				$updated = $info->updated_utc;
+				$diff = $time - $updated;
 					
-					if($diff > $time_sec_max && $info->attempts < $attempts_max)
-					{
-						$info->attempts += 1;
-						$info->updated_utc = $time;
-						$info->save();
+				if($diff > $time_sec_max && $info->attempts < $attempts_max)
+				{
+					$info->attempts += 1;
+					$info->updated_utc = $time;
+					$info->save();
 
-						Mail::to($email)->send(new VerifyMail($request->verify,$info->user,$info->token));
+					Mail::to($email)->send(new VerifyMail($request->verify,$info->user,$info->token));
 						
-						return 0;
-					}
-							
-					return $diff;
+					return 0;
 				}
+							
+				return $diff;
 			}
-			else
-			{
-				$info->attempts += 1;
-				$info->email = $email;
-				$info->updated_utc = $time;
-				$info->save();
-
-				Mail::to($email)->send(new VerifyMail('email',$info->user,$info->token));
-						
-				return 0;
-			}
+			
+			return "Forbidden.";
 		}
-				
-		return "Forbidden";
+		else
+		{
+			$info->attempts += 1;
+			$info->email = $email;
+			$info->updated_utc = $time;
+			$info->save();
+
+			Mail::to($email)->send(new VerifyMail('email',$info->user,$info->token));
+						
+			return 0;
+		}
 	}
 
     /**
@@ -145,9 +139,6 @@ class RelatedEmailController extends Controller
      */
     public function destroy($id)
     {
-		$user_id = Auth::id();
-		$info = RelatedEmails::where('id', $id)->first();
-		
-		if($info->user_id == $user_id) $info->delete();
+		User::find(Auth::id())->related_emails()->findOrFail($id)->delete();
     }
 }

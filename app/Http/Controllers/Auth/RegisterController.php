@@ -72,8 +72,7 @@ class RegisterController extends Controller
 		
 		$token = str_random(10).sha1(date(time()));
 
-		$addRelatedEmail = RelatedEmails::create([
-            'user_id' => $user->id,
+		$relatedEmail = new RelatedEmails([
 			'email' => $data['email'],
             'token' => $token,
 			'as_login' => 1,
@@ -81,25 +80,24 @@ class RegisterController extends Controller
 			'updated_utc' => time()
         ]);
 		
-		$user->as_login = $addRelatedEmail->id;
-		$user->save();
+		$user->related_emails()->save($relatedEmail);
  
         Mail::to($user->email)->send(new VerifyMail("user",$user,$token));
 		
 		return $user;
     }
 	
-	public function verify_user($token)
+	public function verify_user($user_id,$token)
     {
-        $verifyUser = RelatedEmails::where('token', $token)->first();
-        if(isset($verifyUser) ){
-            $user = $verifyUser->user;
+        $verifyEmail = RelatedEmails::where([['user_id',$user_id],['token', $token]])->first();
+        if(isset($verifyEmail) ){
+            $user = $verifyEmail->user;
             if(!$user->activated) {
-				$verifyUser->activated = 1;
-				$verifyUser->save();
+				$verifyEmail->activated = 1;
+				$verifyEmail->save();
 				
-                $verifyUser->user->activated = 1;
-                $verifyUser->user->save();
+                $verifyEmail->user->activated = 1;
+                $verifyEmail->user->save();
 				
                 $status = "Your e-mail is verified. You can now login.";
             }else{
@@ -114,7 +112,9 @@ class RegisterController extends Controller
 	
 	protected function registered(Request $request, $user)
     {
-		$request->session()->flash('id_email', $user->as_login);
+		$verifyEmail = $user->related_emails()->where('as_login', 1)->first();
+		
+		$request->session()->flash('id_email', $verifyEmail->id);
 		$request->session()->flash('email', $user->email);
 		$request->session()->flash('att_used', 1);
 		$request->session()->flash('updated_utc', time());

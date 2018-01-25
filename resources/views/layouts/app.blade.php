@@ -52,6 +52,7 @@
                                 </a>
 
                                 <ul class="dropdown-menu">
+									<li><a href="{{ url('/campaigns') }}"><i class="fa fa-btn fa-user"></i>Campaigns</a></li>
 									<li><a href="{{ url('/profile') }}"><i class="fa fa-btn fa-user"></i>Profile</a></li>
                                     <li>
                                         <a href="{{ route('logout') }}"
