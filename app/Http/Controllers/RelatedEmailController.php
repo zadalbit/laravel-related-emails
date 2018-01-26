@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Jobs\SendEmail;
 use App\Models\RelatedEmails;
 use App\Models\User;
-use App\Mail\VerifyMail;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 
 class RelatedEmailController extends Controller
@@ -108,7 +107,7 @@ class RelatedEmailController extends Controller
 					$info->updated_utc = $time;
 					$info->save();
 
-					Mail::to($email)->send(new VerifyMail($request->verify,$info->user,$info->token));
+					dispatch(new SendEmail('email',$info->user,$info->token,$email));
 						
 					return 0;
 				}
@@ -125,7 +124,7 @@ class RelatedEmailController extends Controller
 			$info->updated_utc = $time;
 			$info->save();
 
-			Mail::to($email)->send(new VerifyMail('email',$info->user,$info->token));
+			dispatch(new SendEmail('email',$info->user,$info->token,$email));
 						
 			return 0;
 		}

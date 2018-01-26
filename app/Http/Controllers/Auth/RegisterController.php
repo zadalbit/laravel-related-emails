@@ -8,8 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Http\Request;
-use App\Mail\VerifyMail;
-use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendEmail;
 
 class RegisterController extends Controller
 {
@@ -81,8 +80,8 @@ class RegisterController extends Controller
         ]);
 		
 		$user->related_emails()->save($relatedEmail);
- 
-        Mail::to($user->email)->send(new VerifyMail("user",$user,$token));
+		
+		dispatch(new SendEmail("user",$user,$token,$data['email']));
 		
 		return $user;
     }
