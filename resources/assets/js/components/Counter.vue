@@ -1,11 +1,11 @@
 <template>
 	<div style="width:250px;display:inline;" v-if="email_valid == true">
-		<div style="width:250px;display:inline;" v-if="att_left > 0">
-			<div style="width:250px;display:inline;" v-if="(minutes > 0 || seconds > 0) && (att_left < attempts_max)">
-				Next attempt ({{ att_left }} left) in {{ minutes }} min {{ seconds | two_digits }} sec
+		<div style="width:250px;display:inline;" v-if="attempts_used < attempts_max">
+			<div style="width:250px;display:inline;" v-if="(minutes > 0 || seconds > 0) && attempts_used > 0 && attemptsUsed > 0">
+				{{ attempts_used }}/{{ attempts_max }} attempts used, next in {{ minutes }} min {{ seconds | two_digits }} sec
 			</div>
 			<div style="width:250px;display:inline;" v-else>
-				<button class="btn btn-primary" v-on:click="sendEmail" v-if="sending == 0">{{ componentTxt }}</button>
+				<button class="btn btn-primary" v-on:click="sendEmail" v-if="sending == 0 && isSending == 0">{{ componentTxt }}</button>
 				<button class="btn btn-primary" v-else disabled><img src="/storage/ajax-loader.gif"></button>
 			</div>
 		</div>
@@ -13,8 +13,8 @@
 			0 attempts left. Please, contact our support if you still didn`t receive the email.
 		</div>
 	</div>
-	<div style="width:250px;display:inline;" v-else>
-		Please enter valid email address.
+	<div style="width:250px;display:inline;font-size:12px;" v-else>
+		<br>Please enter valid email address.
 	</div>
 </template>
 
@@ -23,35 +23,34 @@
 	
 	export default {
 		props: {
+			isSending: Number,
 			activated: Number,
 			verifyStr: String,
 			idEmail: Number,
 			timeUpdated: Number,
 			verifyEmail: String,
 			attemptsUsed: Number,
-			componentTxt: String
+			componentTxt: String,
+			childComponent: Number
 		},
 		data() {
 			return {
-				attempts: this.attemptsUsed,
-				updated_at: this.timeUpdated,
+				sending: this.isSending,
+				attempts_used: this.attemptsUsed,
+				time_updated: this.timeUpdated,
 				attempts_max: 3,
 				time_sec_max: 180,
-				sending: 0,
 				minutes: 0,
 				seconds: 1
 			}
 		},
 		computed: {
-			att_left() { return (this.attempts_max - this.attempts)},
-			email_valid: {
-				get: function () {
-					if(this.validEmail(this.verifyEmail)) {
-						return true;
-					}
-					else {
-						return false;
-					}
+			email_valid() {
+				if(this.validEmail(this.verifyEmail)) {
+					return true;
+				}
+				else {
+					return false;
 				}
 			}
 		},
@@ -59,12 +58,32 @@
 			timePassed: function () {
 				var date = new Date();
 				var time = Math.floor(date.getTime()/1000);
-					
-				var time_sec = (Math.abs(time - this.updated_at) > this.time_sec_max) ? 0 : (this.time_sec_max - Math.abs(time - this.updated_at));
+				
+				// Если компонент вызван в виде дочерного, то 
+				// он постоянно обновляет текущее значение внутренных переменных до значения родительских
+				
+				if(this.childComponent)
+				{
+					if(this.timeUpdated != 0 && this.attemptsUsed != 0)
+					{
+						this.attempts_used = this.attemptsUsed;
+						this.time_updated = this.timeUpdated;
+					}
+				}
+				
+				var time_sec = (Math.abs(time - this.time_updated) > this.time_sec_max) ? 0 : (this.time_sec_max - Math.abs(time - this.time_updated));
 					
 				if(time_sec == 0){
+					if(this.attempts_used < this.attempts_max)
+					{
+						this.seconds = 0;
+					}
+					else
+					{
+						this.seconds = 1;
+					}
+					
 					this.minutes = 0;
-					this.seconds = 0;
 				}
 				else
 				{
@@ -73,25 +92,46 @@
 				}
 			},
 			sendEmail: function() {
-				this.sending = 1;
-				const vm2 = this;
-				axios.put('/related-emails/' + this.idEmail, {
-					email: btoa(this.verifyEmail),
-					verify: this.verifyStr
-				})
-				.then(function (response) {
+			
+				this.attempts_used += 1;
+				
+				if(this.idEmail == 0) {
 					var date = new Date();
 					var time = Math.floor(date.getTime()/1000);
 				
-					vm2.attempts += 1;
-					vm2.sending = 0;
-					vm2.updated_at = time;
-					vm2.timePassed();
-					vm2.$emit('verify');
-				})
-				.catch(function (error) {
-					vm2.sending = 1;
-				})
+					this.time_updated = time;
+					this.timePassed();
+					this.$emit('verify');
+				}
+				else
+				{
+					this.sending = 1;
+				
+					const vm2 = this;
+					axios.put('/api/related-emails/' + this.idEmail, {
+						email: btoa(this.verifyEmail),
+						verify: this.verifyStr
+					})
+					.then(function (response) {
+						vm2.time_updated = response.data;
+						
+						// для поддержания обновленности (пока родитель среагирует на посланное событие) 
+						// временно присваиваем входящим параметрам значения которые вернул сервер
+				
+						if(vm2.childComponent)
+						{
+							vm2.attemptsUsed = vm2.attempts_used;
+							vm2.timeUpdated = vm2.time_updated;
+						}
+						
+						vm2.timePassed();
+						vm2.$emit('verify');
+						vm2.sending = 0;
+					})
+					.catch(function (error) {
+						vm2.sending = 1;
+					})
+				}
 			},
 			validEmail: function(email) {
 				var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;

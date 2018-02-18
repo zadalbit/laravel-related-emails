@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\RelatedEmails;
+use App\Models\RelatedEmail;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 
@@ -43,7 +43,7 @@ class LoginController extends Controller
     {
         if (!$user->activated) {
 			
-			$info = RelatedEmails::where([['user_id', $user->id], ['as_login', 1]])->first();
+			$info = RelatedEmail::where([['user_id', $user->id], ['as_login', 1]])->first();
 			
 			$request->session()->flash('id_email', $info->id);
 			$request->session()->flash('email', $info->email);

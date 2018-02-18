@@ -21,7 +21,7 @@
                     @endif
 					@if (session('att_used') > 0)
 						<div class="text-center">
-							<counter component-txt="Resend confirmation email" verify-str="user" :activated="0" :id-email="{{ session('id_email') }}" :time-updated="{{ session('updated_utc') }}" :attempts-used="{{ session('att_used') }}" verify-email="{{ session('email') }}"></counter>
+							<counter component-txt="Resend confirmation email" verify-str="user" :is-sending="0" :activated="0" :id-email="{{ session('id_email') }}" :time-updated="{{ session('updated_utc') }}" :attempts-used="{{ session('att_used') }}" :child-component="0" verify-email="{{ session('email') }}"></counter>
 						</div><br>
 					@endif
                     <form class="form-horizontal" method="POST" action="{{ route('login') }}">

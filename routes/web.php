@@ -25,5 +25,7 @@ Route::get('/email/verify/{token}', 'UserController@verify_email');
 
 Route::get('/profile', 'UserController@profile');
 
-Route::resource('related-emails', 'RelatedEmailController', ['except' => ['show','store','edit']]);
+Route::get('/campaigns/{id}/edit/database', 'CampaignController@edit_database');
+Route::get('/campaigns/{id}/edit/content', 'CampaignController@edit_content');
+Route::resource('campaigns', 'CampaignController');
 

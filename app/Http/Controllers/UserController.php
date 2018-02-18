@@ -17,23 +17,23 @@ class UserController extends Controller
 	
 	public function profile()
 	{
-    	return view('profile', array('user' => Auth::user()));		
+    	return view('user.profile');		
     }
 	
 	public function verify_email($token)
 	{
-		$verifyEmail = User::find(Auth::id())->related_emails()->where('token', $token)->first();
+		$relatedEmail = User::find(Auth::id())->related_emails()->where('token', $token)->first();
 		
-        if(isset($verifyEmail) ) {
-            if(!$verifyEmail->activated) 
+        if(isset($relatedEmail) ) {
+            if(!$relatedEmail->activated) 
 			{
-				$verifyEmail->activated = 1;
-				$verifyEmail->save();
+				$relatedEmail->activated = 1;
+				$relatedEmail->save();
 				
-                $status = "Your e-mail ". $verifyEmail->email ." is verified.";
+                $status = "Your e-mail ". $relatedEmail->email ." is verified.";
             }
 			else {
-                $status = "Your e-mail ". $verifyEmail->email ." is already verified.";
+                $status = "Your e-mail ". $relatedEmail->email ." is already verified.";
             }
         }
 		else {

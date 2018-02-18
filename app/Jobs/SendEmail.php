@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use Mail;
-use App\Mail\VerifyMail;
+use App\Mail\EmailVerification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -39,7 +39,7 @@ class SendEmail implements ShouldQueue
      */
     public function handle()
     {
-        $email = new VerifyMail($this->verify, $this->user, $this->token);
+        $email = new EmailVerification($this->verify, $this->user, $this->token);
 		Mail::to($this->email)->send($email);
     }
 }
